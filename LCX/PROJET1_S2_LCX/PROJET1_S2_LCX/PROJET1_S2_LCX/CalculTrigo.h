@@ -15,8 +15,7 @@
 
 //-- déclaration -> définition globales --// 
 #define NB_CHOIX_MAX 2
-#define PI = 3.1415
-#define DEMICERCLE = 180
+#define DEMICERCLE 180
 
 //-- déclaration -> énumération globales --// 
 typedef enum { cote, angle } e_choixCoteAngle;
@@ -29,20 +28,22 @@ typedef enum { ok, nok} e_validation;
 //--> structure 1
 typedef struct
 {
-	unsigned int adjacent;
-	unsigned int hypotenuse;
-	unsigned int oppose;
+	unsigned char adjacent;
+	unsigned char hypotenuse;
+	unsigned char oppose;
 } str_coteTriangle;
 
 //--> structure 2
 typedef struct
 {
 	float tb_Angle[4];
+	//[0] -> alpha deg [1] -> alpha rad
+	//[2] -> beta deg [3] -> beta rad
 	str_coteTriangle triangle_s;
 	struct Str_AetP
 	{
-		unsigned int air;
-		unsigned int perimetre;
+		unsigned short air;
+		unsigned char perimetre;
 	};
 } str_triangleRectangle;
 
@@ -61,5 +62,8 @@ typedef struct
 
 	//-> calculer les différents angles 
 	e_validation CalculerLongueurSegment(str_triangleRectangle * pt_strTriangle);
+
+	//-> calculer le périmetre et la surface
+	e_validation CalculerPerimetreAir(str_triangleRectangle* pt_strTriangle);
 
 #endif // !CALCUL_TRIGO_H

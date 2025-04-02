@@ -15,10 +15,8 @@
 #define _USE_MATH_DEFINES
 
 //--- librairie standart ---//
-#include <stdint.h>					//-- standard library of integer 
+//#include <stdint.h>					//-- standard library of integer 
 #include <stdio.h>					// for the Input-Ouput system 
-#include <stdlib.h>					// to use the OS commands 
-#include <string.h>					// to use string commands
 #include <math.h>
 
 
@@ -36,29 +34,66 @@ e_validation InitialiserStructure(str_triangleRectangle* pt_strTriangle)
 {
 	//-- déclaration variables --// 
 	//-- pirmaire --// 
-	int i;
-	
+
+	short i; //indice de boucle
 
 	//-- enumeration --// 
+	//e_validation e_valid = ok; //avec le teste par pointeur
+	e_validation e_valid = nok; //avec le teste if()
 
+	//-- pointeur --//
+	//char* pt_strOctet = pt_strTriangle; // pointeur en octet
 
 	//-- boucle pour initilaiser le tableau des angles --//
-	for (i = 0; i++; i < 4)
+	for (i = 0; i < 4 ; i++)
 	{
-		(*pt_strTriangle + i) = 0;
+		pt_strTriangle->tb_Angle[i] = 0;
 	}
 
 	//-- initialisation des cotés -> adj - hyp - opp --// 
-
+	pt_strTriangle->triangle_s.adjacent = 0;
+	pt_strTriangle->triangle_s.hypotenuse = 0;
+	pt_strTriangle->triangle_s.oppose = 0;
 
 	//-- initialisation des champs de air et perimètres --// 
-
+	pt_strTriangle->air = 0;
+	pt_strTriangle->perimetre = 0;
 
 	//-- validation -> de la fct --// 
 
+	//l'addition de toute les champs doit être égale a zéro
+	if ( (pt_strTriangle->tb_Angle[0] 
+		+ pt_strTriangle->tb_Angle[1]
+		+ pt_strTriangle->tb_Angle[2] 
+		+ pt_strTriangle->tb_Angle[3]
+		+ pt_strTriangle->triangle_s.adjacent 
+		+ pt_strTriangle->triangle_s.hypotenuse
+		+ pt_strTriangle->triangle_s.oppose 
+		+ pt_strTriangle->air
+		+ pt_strTriangle->perimetre) == 0) 
+	{
+		printf("\n-> initialisation OK\n");
+		e_valid = ok;
+	}
+	else
+	{
+		printf("\n-> initialisation NOK\n");
+		//e_valid est par défaut nok
+	}
+
+	//proposition teste par pointeur mais ne fonctionne pas a l'indice 19
+	//valeur retournée -52
+	/*for (i = 0; i < 22; i++)
+	{
+		printf_s("%d",(int)*(pt_strOctet +i));
+		if ((pt_strOctet + i) != 0)
+		{
+			e_valid = nok;
+		}
+	}*/
 
 	//-- valeur à retourner --// 
-	return; //e_validation();
+	return e_valid;
 }
 /* ----------------------------------------------------------------------------------
 // -> NOM FCT					: Conversion_DegRad
@@ -72,12 +107,18 @@ void Conversion_DegRad(str_triangleRectangle* pt_strTriangle)
 {
 
 	//-- test si angle à convertir --//
-	
-	//--> alpha 
-	*pt_strTriangle = (PI * (*pt_strTriangle + 4))/ DEMICERCLE;
-		
-	//--> beta 
-	(* pt_strTriangle + 8) = (PI * (*pt_strTriangle + 12)) / DEMICERCLE;
+	if (pt_strTriangle->tb_Angle[0] != 0)
+	{
+		//--> alpha 
+		//						[1] -> alpha rad										   [0] -> alpha deg
+		pt_strTriangle->tb_Angle[1] = (float)(M_PI / DEMICERCLE) * pt_strTriangle->tb_Angle[0];
+	}
+	if (pt_strTriangle->tb_Angle[2] != 0)
+	{
+		//--> beta 
+		//						[3] -> beta rad											   [2] -> beta deg 
+		pt_strTriangle->tb_Angle[3] = (float)(M_PI / DEMICERCLE) * pt_strTriangle->tb_Angle[2];
+	}
 
 }
 /* ----------------------------------------------------------------------------------
@@ -92,12 +133,18 @@ void Conversion_RadDeg(str_triangleRectangle* pt_strTriangle)
 {
 
 	//-- test si angle à convertir --//
-	
-	//--> alpha 
-	(*pt_strTriangle + 4) = (DEMICERCLE * *pt_strTriangle) / PI;
-
-	//--> beta 
-	(*pt_strTriangle + 12) = (DEMICERCLE * (*pt_strTriangle + 8)) / PI;
+	if (pt_strTriangle->tb_Angle[1] != 0)
+	{
+		//--> alpha 
+		//						[0] -> alpha deg										   [1] -> alpha rad
+		pt_strTriangle->tb_Angle[0] = (float)(DEMICERCLE / M_PI) * pt_strTriangle->tb_Angle[1];
+	}
+	if (pt_strTriangle->tb_Angle[3] != 0)
+	{
+		//--> beta 
+		//						[2] -> beta deg											   [3] -> beta rad
+		pt_strTriangle->tb_Angle[2] = (float)(DEMICERCLE / M_PI) * pt_strTriangle->tb_Angle[3];
+	}
 }
 /* ----------------------------------------------------------------------------------
 // -> NOM FCT					: CalculAllAngles
@@ -108,40 +155,123 @@ void Conversion_RadDeg(str_triangleRectangle* pt_strTriangle)
  ----------------------------------------------------------------------------------*/
 e_validation CalculerAllAngles(str_triangleRectangle* pt_strTriangle)
 {
+	//-- déclaration variables --// 
+	//-- pirmaire --// 
+
+	float tmp; //valeur temporaire des rapport pour les arctan/arcsin/arccos
+
+	//-- enumeration --//
+	e_validation e_valid = nok;
+
+	//--test si pas d'angle défini 
+	if ((pt_strTriangle->tb_Angle[0] == 0) && (pt_strTriangle->tb_Angle[2] == 0))
+	{
+		//-- si coté non défini -> hypothénuse -> fonction trigo inversée arctan
+		if ((pt_strTriangle->triangle_s.hypotenuse == 0) && (pt_strTriangle->triangle_s.oppose != 0) && (pt_strTriangle->triangle_s.adjacent != 0))
+		{
+			tmp = ((float)pt_strTriangle->triangle_s.oppose / (float)pt_strTriangle->triangle_s.adjacent);
+			pt_strTriangle->tb_Angle[1] = (float)atan((double)tmp);
+			//pt_strTriangle->tb_Angle[1] = (float)atan((pt_strTriangle->triangle_s.oppose / pt_strTriangle->triangle_s.adjacent));
+		}
+		//-- si coté non défini -> opposé -> fonction trigo inversée arccos
+		if ((pt_strTriangle->triangle_s.oppose == 0) && (pt_strTriangle->triangle_s.adjacent != 0) && (pt_strTriangle->triangle_s.hypotenuse != 0))
+		{
+			tmp = ((float)pt_strTriangle->triangle_s.adjacent / (float)pt_strTriangle->triangle_s.hypotenuse);
+			pt_strTriangle->tb_Angle[1] = (float)acos((double)tmp);
+			//pt_strTriangle->tb_Angle[1] = (float)acos((pt_strTriangle->triangle_s.adjacent / pt_strTriangle->triangle_s.hypotenuse));
+		}
+		//-- si coté non défini -> adjacent -> fonction trigo inversée arcsin
+		if ((pt_strTriangle->triangle_s.adjacent == 0) && (pt_strTriangle->triangle_s.oppose != 0) && (pt_strTriangle->triangle_s.hypotenuse != 0))
+		{
+			tmp = ((float)pt_strTriangle->triangle_s.oppose / (float)pt_strTriangle->triangle_s.hypotenuse);
+			pt_strTriangle->tb_Angle[1] = (float)asin((double)tmp);
+			//pt_strTriangle->tb_Angle[1] = (float)asin((pt_strTriangle->triangle_s.oppose / pt_strTriangle->triangle_s.hypotenuse));
+		}
+		//-- conversion Radian - Degré
+		Conversion_RadDeg(pt_strTriangle);
+	}
 
 	//-- test si un angle a été définit alpha ou beta 
-
-		//-- calcul de alpha 
+	if ((pt_strTriangle->tb_Angle[0] != 0) && (pt_strTriangle->tb_Angle[2] == 0))
+	{
+		pt_strTriangle->tb_Angle[2] = 90 - pt_strTriangle->tb_Angle[0]; //-- calcul de beta
+	}
+	else if ((pt_strTriangle->tb_Angle[0] == 0) && (pt_strTriangle->tb_Angle[2] != 0))
+	{
+		pt_strTriangle->tb_Angle[0] = 90 - pt_strTriangle->tb_Angle[2]; //-- calcul de alpha 
+	}
+	//-- conversion Degré - Radian 
+	Conversion_DegRad(pt_strTriangle);
 	
-	
-			//-- conversion Degré - Radian 
-			Conversion_DegRad(&triangle);
-		//-- calcul de beta
-
-			//-- conversion Degré - Radian 
-
-	//-- si pas d'angle défini 
-
-		//-- si coté non défini -> hypothénuse -> fonction trigo inversée arctan 
-		
-			//-- conversion Radian - Degré
-			Conversion_RadDeg(&triangle);
-		
-		//-- si coté non défini -> opposé -> fonction trigo inversée arccos
-			
-			//-- conversion Radian - Degré 
-		
-		//-- si coté non défini -> adjacent -> fonction trigo inversée arcsin
-		
-			//-- conversion Radian - Degré 
+	//-- affichge des valeur des angle pour debug --//
+	//printf("%f \n", pt_strTriangle->tb_Angle[0]);
+	//printf("%f \n", pt_strTriangle->tb_Angle[1]);
+	//printf("%f \n", pt_strTriangle->tb_Angle[2]);
+	//printf("%f \n", pt_strTriangle->tb_Angle[3]);
 
 	//-- test si tous les champs sont remplis 
-		
-		//-- retourne OK 
-	
+	//fonction ET de toute les champs des angles doit être différant de zéro
+	if ((pt_strTriangle->tb_Angle[0] != 0) &&
+		(pt_strTriangle->tb_Angle[1] != 0) &&
+		(pt_strTriangle->tb_Angle[2] != 0) &&
+		(pt_strTriangle->tb_Angle[3] != 0))
+	{
+		printf("\n-> CalculerAllAngles OK\n");
+		e_valid = ok;
+	}
+	else
+	{
+		printf("\n-> CalculerAllAngles NOK\n");
+		//e_valid est par défaut nok
+	}
 
-	return; //e_validation();
+	return e_valid;
 }
+
+/* ----------------------------------------------------------------------------------
+// -> NOM FCT					: CalculerPerimetreAir
+// -> PARAMETRES ENTRES			:
+// -> PARAMETRE SORTIE			: e_validation
+// -> PARAMETRE IN/OUT -> ptr	: str_triangleRectangle pt_strTriangle
+// -> description				: calculer le périmetre et l'air du triangle
+//								  selon les paramètres insérer par l'utilisateur
+ ----------------------------------------------------------------------------------*/
+e_validation CalculerPerimetreAir(str_triangleRectangle* pt_strTriangle)
+{
+	//-- enumeration --// 
+	e_validation e_valid = nok;
+
+	// Si les segment on été calculé, calculer le périmetre et l'Air
+	if ((pt_strTriangle->triangle_s.hypotenuse != 0) &&
+		(pt_strTriangle->triangle_s.adjacent != 0) &&
+		(pt_strTriangle->triangle_s.oppose != 0))
+	{
+		//somme des segment est égale au perimetre
+		pt_strTriangle->perimetre = (pt_strTriangle->triangle_s.hypotenuse + pt_strTriangle->triangle_s.adjacent + pt_strTriangle->triangle_s.oppose);
+		//(base * hauteur) /2 est égale a l'air (adjacent * opposé) /2
+		pt_strTriangle->air = (pt_strTriangle->triangle_s.adjacent * pt_strTriangle->triangle_s.oppose) / 2;
+	}
+
+
+	//fonction ET de toute les champs des angles doit être différant de zéro
+	if ((pt_strTriangle->air != 0) &&
+		(pt_strTriangle->perimetre != 0))
+	{
+		printf("\n-> CalculerPerimetreAir OK\n");
+		e_valid = ok;
+	}
+	else
+	{
+		printf("\n-> CalculerPerimetreAir NOK\n");
+		//e_valid est par défaut nok
+	}
+
+	return e_valid;
+
+
+
+}
+
 /* ----------------------------------------------------------------------------------
 // -> NOM FCT					: CalculerLongeursSgements
 // -> PARAMETRES ENTRES			:
@@ -153,56 +283,94 @@ e_validation CalculerAllAngles(str_triangleRectangle* pt_strTriangle)
  ----------------------------------------------------------------------------------*/
 e_validation CalculerLongueurSegment(str_triangleRectangle* pt_strTriangle)
 {
-
-	//-- test -> si pas aucun angle définit 
-
-		//-- test si la valeur à calculer est à zéro 
-
-			//-- calculer segment adjacent --//
-
-			//-- calculer segment hypothénuse --// 
-
-			//-- calculer segment opposé 
-
-	//-- test si un angle a été définit alpha ou beta 
-
-		//-- test si l'angle alpha a été inséré 
-
-			//-- conversion de alpha -> ° -> radian 
+	//-- enumeration --// 
+	e_validation e_valid = nok; 
 
 
-			//-- test si sgement hypothénuse entré 
+	//-- calcule les angles--//
+	e_valid = CalculerAllAngles(pt_strTriangle);
 
-				//Calcul -> cos(alpha) = adj / hyp => ... 
+	// si les angle on pu être déterminé calculer les segments
+	// et que au moins un des coté du triangle est définit
+	if ((e_valid == ok) &&
+		((pt_strTriangle->triangle_s.hypotenuse +
+			pt_strTriangle->triangle_s.adjacent +
+			pt_strTriangle->triangle_s.oppose) != 0))
+	{
+		//-- test si sgement hypothénuse entré 
+		if (pt_strTriangle->triangle_s.hypotenuse != 0)
+		{
+			//Calcul -> cos(alpha) = adj / hyp => ... 
+			if (pt_strTriangle->triangle_s.adjacent == 0)
+			{
+				pt_strTriangle->triangle_s.adjacent = (char)(cos(pt_strTriangle->tb_Angle[1]) * pt_strTriangle->triangle_s.hypotenuse);
+			}
+			//Calcul -> sin(alpha) = opp / hyp => ...
+			if (pt_strTriangle->triangle_s.oppose == 0)
+			{
+				pt_strTriangle->triangle_s.oppose = (char)(sin(pt_strTriangle->tb_Angle[1]) * pt_strTriangle->triangle_s.hypotenuse);
+			}	
+		}
+		//-- test si sgement adjacent entré 
+		else if (pt_strTriangle->triangle_s.adjacent != 0)
+		{
+			
+			//Calcul -> cos(alpha) = adj/hyp => ...
+			if (pt_strTriangle->triangle_s.hypotenuse == 0)
+			{
+				pt_strTriangle->triangle_s.hypotenuse = (char)(pt_strTriangle->triangle_s.adjacent / cos(pt_strTriangle->tb_Angle[1]));
+			}
+			//Calcul -> tan(alpha) = opp/adj => ...
+			if (pt_strTriangle->triangle_s.oppose == 0)
+			{
+				pt_strTriangle->triangle_s.oppose = (char)(tan(pt_strTriangle->tb_Angle[1]) * pt_strTriangle->triangle_s.adjacent);
+			}
+		}
+		//-- test si sgement opposé entré  			
+		else if (pt_strTriangle->triangle_s.oppose != 0)
+		{
+			//Calcul -> sin(alpha) = opp/hyp => ...
+			if (pt_strTriangle->triangle_s.hypotenuse == 0)
+			{
+				pt_strTriangle->triangle_s.hypotenuse = (char)(pt_strTriangle->triangle_s.oppose / sin(pt_strTriangle->tb_Angle[1]));
+			}
+			//Calcul -> tan(alpha) = opp/adj => ... 
+			if (pt_strTriangle->triangle_s.adjacent == 0)
+			{
+				pt_strTriangle->triangle_s.adjacent = (char)(pt_strTriangle->triangle_s.oppose / tan(pt_strTriangle->tb_Angle[1]));
+			}
+		}
+	}
+	//si aucun des coté n'est définis affiche qu'il n'y a pas de coté définis
+	else
+	{
+		printf("\n-> Aucun cote definnis\n");
+	}
 
+	//-- calcule le périmetre et la surface --//
+	e_valid = CalculerPerimetreAir(pt_strTriangle);
 
-				//Calcul -> sin(alpha) = opp / hyp => ...
-
-			//-- test si sgement adjacent entré 
-
-				//Calcul -> cos(alpha) = adj/hyp => ...
-
-
-				//Calcul -> tan(alpha) = opp/adj => ...
-
-			//-- test si sgement opposé entré  
-
-				//Calcul -> sin(alpha) = opp/hyp => ...
-
-				
-				//Calcul -> tan(alpha) = opp/adj => ... 
-
-
-	//-- calcul de tous les angles -> appel de fct --// 
-
-
-	//-- check si la longeur des segments bien calculé 
-
-
-	//-- retourne OK 
-
-	return; //e_validation();
+	//-- test si tous les champs sont remplis 
+	//fonction ET de toute les champs des segment doit être différant de zéro
+	if ((e_valid == ok) && // contrôle que les ancienne fonction ce sont executé correctement
+		(pt_strTriangle->triangle_s.hypotenuse != 0) &&
+		(pt_strTriangle->triangle_s.adjacent != 0) &&
+		(pt_strTriangle->triangle_s.oppose != 0))
+	{
+		//-- retourne OK
+		printf("\n-> CalculerLongueurSegment OK\n");
+		e_valid = ok;
+	}
+	else
+	{
+		//-- retourne NOK
+		printf("\n-> CalculerLongueurSegment NOK\n");
+		e_valid = nok;
+	}
+	
+	return e_valid; 
 }
+
 
 
 
